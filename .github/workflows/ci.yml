@@ -1,0 +1,29 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - 'main'
+    tags-ignore:
+      - '*'
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aquaproj/aqua-installer@v1.0.0
+        with:
+          aqua_version: v1.17.1
+      - run: make test
+  tilt:
+    name: Run tilt ci
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aquaproj/aqua-installer@v1.0.0
+        with:
+          aqua_version: v1.17.1
+      - run: make controller-gen
+      - run: make start
+      - run: tilt ci
