@@ -87,7 +87,7 @@ func (r *MarkdownView) validate() error {
 		}
 	}
 	if !hasSummary {
-		errs = append(errs, field.Invalid(field.NewPath("spec", "markdowns"), r.Spec.Markdowns, "markdowns must have SUMMARY.md."))
+		errs = append(errs, field.Required(field.NewPath("spec", "markdowns"), "markdowns must have SUMMARY.md."))
 	}
 
 	if len(errs) > 0 {

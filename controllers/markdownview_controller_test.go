@@ -106,25 +106,24 @@ var _ = Describe("Markdownview Controller", func() {
 		Expect(svc.Spec.Ports[0].TargetPort).Should(Equal(intstr.FromInt(3000)))
 	})
 
-  It("should update status", func() {
-    mdView := newMarkdownView()
-    err := k8sClient.Create(ctx, mdView)
-    Expect(err).To(Succeed())
+	It("should update status", func() {
+		mdView := newMarkdownView()
+		err := k8sClient.Create(ctx, mdView)
+		Expect(err).To(Succeed())
 
-    var updated viewv1.MarkdownView
-    Eventually(func() error{
-      err := k8sClient.Get(ctx, client.ObjectKey{Namespace: "test", Name: "sample"}, &updated)
-      if err != nil {
-        return err
-      }
-      if updated.Status == "" {
-        return errors.New("status should be updated")
-      }
-      return nil
-    }).Should(Succeed())
-  })
+		var updated viewv1.MarkdownView
+		Eventually(func() error {
+			err := k8sClient.Get(ctx, client.ObjectKey{Namespace: "test", Name: "sample"}, &updated)
+			if err != nil {
+				return err
+			}
+			if updated.Status == "" {
+				return errors.New("status should be updated")
+			}
+			return nil
+		}).Should(Succeed())
+	})
 })
-
 
 func newMarkdownView() *viewv1.MarkdownView {
 	return &viewv1.MarkdownView{
