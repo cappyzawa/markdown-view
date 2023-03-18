@@ -20,8 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+//! [spec]
 
 // MarkdownViewSpec defines the desired state of MarkdownView
 type MarkdownViewSpec struct {
@@ -42,9 +41,12 @@ type MarkdownViewSpec struct {
 	ViewerImage string `json:"viewerImage,omitempty"`
 }
 
-// MarkdownViewStatus defines the observed state of MarkdownView
-//+kubebuilder:validation:Enum=NotReady;Available;Healthy
+//! [spec]
 
+//! [status]
+
+// MarkdownViewStatus defines the observed state of MarkdownView
+// +kubebuilder:validation:Enum=NotReady;Available;Healthy
 type MarkdownViewStatus string
 
 const (
@@ -53,6 +55,9 @@ const (
 	MarkdownViewHealthy   = MarkdownViewStatus("Healthy")
 )
 
+//! [status]
+
+//! [markdown-view]
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="REPLICAS",type="integer",JSONPath=".spec.replicas"
@@ -66,6 +71,8 @@ type MarkdownView struct {
 	Spec   MarkdownViewSpec   `json:"spec,omitempty"`
 	Status MarkdownViewStatus `json:"status,omitempty"`
 }
+
+//! [markdown-view]
 
 //+kubebuilder:object:root=true
 
