@@ -32,8 +32,6 @@ func (r *MarkdownView) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-
 //+kubebuilder:webhook:path=/mutate-view-cappyzawa-github-io-v1-markdownview,mutating=true,failurePolicy=fail,sideEffects=None,groups=view.cappyzawa.github.io,resources=markdownviews,verbs=create;update,versions=v1,name=mmarkdownview.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Defaulter = &MarkdownView{}
@@ -45,7 +43,6 @@ func (r *MarkdownView) Default() {
 	// TODO(user): fill in your defaulting logic.
 }
 
-// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 //+kubebuilder:webhook:path=/validate-view-cappyzawa-github-io-v1-markdownview,mutating=false,failurePolicy=fail,sideEffects=None,groups=view.cappyzawa.github.io,resources=markdownviews,verbs=create;update,versions=v1,name=vmarkdownview.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &MarkdownView{}
