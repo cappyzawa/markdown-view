@@ -45,8 +45,9 @@ var _ = Describe("Markdownview Controller", func() {
 		Expect(err).To(Succeed())
 
 		reconciler := MarkdownViewReconciler{
-			Client: k8sClient,
-			Scheme: scheme,
+			Client:   k8sClient,
+			Scheme:   scheme,
+			Recorder: mgr.GetEventRecorderFor("markdownview-controller"),
 		}
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).To(Succeed())
