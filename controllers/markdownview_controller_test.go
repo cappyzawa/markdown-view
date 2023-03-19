@@ -78,6 +78,7 @@ var _ = Describe("Markdownview Controller", func() {
 		}).Should(Succeed())
 		Expect(cm.Data).Should(HaveKey("SUMMARY.md"))
 		Expect(cm.Data).Should(HaveKey("page1.md"))
+		Expect(cm.GetOwnerReferences()).To(HaveLen(1))
 	})
 
 	It("should create Deployment", func() {
@@ -91,6 +92,7 @@ var _ = Describe("Markdownview Controller", func() {
 		}).Should(Succeed())
 		Expect(dep.Spec.Replicas).Should(Equal(pointer.Int32Ptr(3)))
 		Expect(dep.Spec.Template.Spec.Containers[0].Image).Should(Equal("peaceiris/mdbook:0.4.10"))
+		Expect(dep.GetOwnerReferences()).To(HaveLen(1))
 	})
 
 	It("should create Service", func() {
@@ -104,6 +106,7 @@ var _ = Describe("Markdownview Controller", func() {
 		}).Should(Succeed())
 		Expect(svc.Spec.Ports[0].Port).Should(Equal(int32(80)))
 		Expect(svc.Spec.Ports[0].TargetPort).Should(Equal(intstr.FromInt(3000)))
+		Expect(svc.GetOwnerReferences()).To(HaveLen(1))
 	})
 
 	It("should update status", func() {

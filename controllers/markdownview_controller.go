@@ -27,6 +27,7 @@ import (
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -107,7 +108,7 @@ func (r *MarkdownViewReconciler) reconcileConfigMap(ctx context.Context, mdView 
 		for name, content := range mdView.Spec.Markdowns {
 			cm.Data[name] = content
 		}
-		return nil
+		return ctrl.SetControllerReference(&mdView, cm, r.Scheme)
 	})
 
 	if err != nil {
@@ -129,12 +130,18 @@ func (r *MarkdownViewReconciler) reconcileDeployment(ctx context.Context, mdView
 		viewerImage = mdView.Spec.ViewerImage
 	}
 
+	owner, err := controllerReference(mdView, r.Scheme)
+	if err != nil {
+		return err
+	}
+
 	dep := appsv1apply.Deployment(depName, mdView.Namespace).
 		WithLabels(map[string]string{
 			"app.kubernetes.io/name":       "mdbook",
 			"app.kubernetes.io/instance":   mdView.Name,
 			"app.kubernetes.io/created-by": "markdown-view-controller",
 		}).
+		WithOwnerReferences(owner).
 		WithSpec(appsv1apply.DeploymentSpec().
 			WithReplicas(mdView.Spec.Replicas).
 			WithSelector(metav1apply.LabelSelector().WithMatchLabels(map[string]string{
@@ -229,12 +236,18 @@ func (r *MarkdownViewReconciler) reconcileService(ctx context.Context, mdView vi
 	logger := log.FromContext(ctx)
 	svcName := "viewer-" + mdView.Name
 
+	owner, err := controllerReference(mdView, r.Scheme)
+	if err != nil {
+		return err
+	}
+
 	svc := corev1apply.Service(svcName, mdView.Namespace).
 		WithLabels(map[string]string{
 			"app.kubernetes.io/name":       "mdbook",
 			"app.kubernetes.io/instance":   mdView.Name,
 			"app.kubernetes.io/created-by": "markdown-view-controller",
 		}).
+		WithOwnerReferences(owner).
 		WithSpec(corev1apply.ServiceSpec().
 			WithSelector(map[string]string{
 				"app.kubernetes.io/name":       "mdbook",
@@ -323,4 +336,20 @@ func (r *MarkdownViewReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Complete(r)
+}
+
+func controllerReference(mdView viewv1.MarkdownView, scheme *runtime.Scheme) (*metav1apply.OwnerReferenceApplyConfiguration, error) {
+	gvk, err := apiutil.GVKForObject(&mdView, scheme)
+	if err != nil {
+		return nil, err
+	}
+	ref := metav1apply.OwnerReference().
+		WithAPIVersion(gvk.GroupVersion().String()).
+		WithKind(gvk.Kind).
+		WithName(mdView.Name).
+		WithUID(mdView.GetUID()).
+		WithBlockOwnerDeletion(true).
+		WithController(true)
+
+	return ref, nil
 }
