@@ -71,8 +71,18 @@ func (r *MarkdownViewReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, err
 	}
 
-	// Do nothing when the resource is deleted
+	finalizerName := "markdownview.view.cappyzawa.github.io/finalizer"
 	if !mdView.ObjectMeta.DeletionTimestamp.IsZero() {
+		// If deletionTimestamp is not zero, it means that the resource deletion process has been initiated.
+
+		if controllerutil.ContainsFinalizer(&mdView, finalizerName) {
+			// Note: If you are going to delete an external resource, do it here.
+
+			controllerutil.RemoveFinalizer(&mdView, finalizerName)
+			if err = r.Update(ctx, &mdView); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
 		return ctrl.Result{}, nil
 	}
 
