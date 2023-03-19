@@ -75,6 +75,7 @@ var _ = Describe("MarkdownView Handler", func() {
 	Context("when validating", func() {
 		It("should create a valid MarkdownView", func() {
 			validateTest(filepath.Join("testdata", "validating", "valid.yaml"), true)
+			validateTest(filepath.Join("testdata", "validating", "non-default-img.yaml"), true)
 		})
 		It("should not create an invalid MarkdownView", func() {
 			validateTest(filepath.Join("testdata", "validating", "empty-markdowns.yaml"), false)

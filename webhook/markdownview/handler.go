@@ -3,6 +3,7 @@ package markdownview
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	viewv1 "github.com/cappyzawa/markdown-view/api/v1"
@@ -61,8 +62,11 @@ func (v *Validator) Handle(ctx context.Context, req admission.Request) admission
 
 	switch req.Operation {
 	case admissionv1.Create, admissionv1.Update:
-		if err := v.validate(ctx, &mdView); err != nil {
+		if err := v.validateError(ctx, &mdView); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
+		}
+		if msgs := v.validateWarn(ctx, &mdView); len(msgs) != 0 {
+			return admission.Allowed("").WithWarnings(msgs...)
 		}
 		return admission.Allowed("")
 	default:
@@ -75,7 +79,7 @@ func (v *Validator) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func (v *Validator) validate(ctx context.Context, mdView *viewv1.MarkdownView) error {
+func (v *Validator) validateError(ctx context.Context, mdView *viewv1.MarkdownView) error {
 	logger := logf.FromContext(ctx)
 	var errs field.ErrorList
 	if mdView.Spec.Replicas < 1 || mdView.Spec.Replicas > 5 {
@@ -98,4 +102,17 @@ func (v *Validator) validate(ctx context.Context, mdView *viewv1.MarkdownView) e
 	}
 
 	return nil
+}
+
+func (v *Validator) validateWarn(ctx context.Context, mdView *viewv1.MarkdownView) []string {
+	var warnMsgs []string
+	isDefaultViewerImage := false
+	if mdView.Spec.ViewerImage == "peaceiris/mdbook:latest" {
+		isDefaultViewerImage = true
+	}
+	if !isDefaultViewerImage {
+		warnMsgs = append(warnMsgs, fmt.Sprintf("%s: \"%s\": viewerImage is not default", field.NewPath("spec", "viewerImage"), mdView.Spec.ViewerImage))
+	}
+
+	return warnMsgs
 }

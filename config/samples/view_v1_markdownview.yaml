@@ -24,4 +24,4 @@ spec:
       1ページ目のコンテンツです。
       Updateした
   replicas: 1
-  viewerImage: "peaceiris/mdbook:latest"
+  viewerImage: "peaceiris/mdbook:0.4.10"
