@@ -1,4 +1,4 @@
-package v1
+package markdownview
 
 import (
 	"bytes"
@@ -9,11 +9,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	viewv1 "github.com/cappyzawa/markdown-view/api/v1"
 )
+
 
 func mutateTest(before string, after string) {
 	ctx := context.Background()
@@ -21,21 +23,21 @@ func mutateTest(before string, after string) {
 	y, err := os.ReadFile(before)
 	Expect(err).To(Succeed())
 	d := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(y), 4096)
-	beforeView := &MarkdownView{}
+	beforeView := &viewv1.MarkdownView{}
 	err = d.Decode(beforeView)
 	Expect(err).To(Succeed())
 
 	err = k8sClient.Create(ctx, beforeView)
 	Expect(err).To(Succeed())
 
-	ret := &MarkdownView{}
+	ret := &viewv1.MarkdownView{}
 	err = k8sClient.Get(ctx, types.NamespacedName{Name: beforeView.GetName(), Namespace: beforeView.GetNamespace()}, ret)
 	Expect(err).To(Succeed())
 
 	y, err = os.ReadFile(after)
 	Expect(err).To(Succeed())
 	d = yaml.NewYAMLOrJSONDecoder(bytes.NewReader(y), 4096)
-	afterView := &MarkdownView{}
+	afterView := &viewv1.MarkdownView{}
 	err = d.Decode(afterView)
 	Expect(err).To(Succeed())
 
@@ -47,7 +49,7 @@ func validateTest(file string, valid bool) {
 	y, err := os.ReadFile(file)
 	Expect(err).To(Succeed())
 	d := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(y), 4096)
-	mdView := &MarkdownView{}
+	mdView := &viewv1.MarkdownView{}
 	err = d.Decode(mdView)
 	Expect(err).To(Succeed())
 
@@ -64,7 +66,7 @@ func validateTest(file string, valid bool) {
 	}
 }
 
-var _ = Describe("MarkdownviewWebhook", func() {
+var _ = Describe("MarkdownView Handler", func() {
 	Context("when mutating", func() {
 		It("should mutate a MarkdownView", func() {
 			mutateTest(filepath.Join("testdata", "mutating", "before.yaml"), filepath.Join("testdata", "mutating", "after.yaml"))

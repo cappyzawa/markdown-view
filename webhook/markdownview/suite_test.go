@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package markdownview
 
 import (
 	"context"
@@ -30,6 +30,7 @@ import (
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	//+kubebuilder:scaffold:imports
+	viewv1 "github.com/cappyzawa/markdown-view/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -75,7 +77,7 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	scheme := runtime.NewScheme()
-	err = AddToScheme(scheme)
+	err = viewv1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = admissionv1beta1.AddToScheme(scheme)
@@ -99,8 +101,9 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&MarkdownView{}).SetupWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
+	hookServer := mgr.GetWebhookServer()
+	hookServer.Register("/mutate-view-cappyzawa-github-io-v1-markdownview", &webhook.Admission{Handler: &Mutator{}})
+	hookServer.Register("/validate-view-cappyzawa-github-io-v1-markdownview", &webhook.Admission{Handler: &Validator{}})
 
 	//+kubebuilder:scaffold:webhook
 

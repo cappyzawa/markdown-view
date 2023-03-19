@@ -30,9 +30,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	viewv1 "github.com/cappyzawa/markdown-view/api/v1"
 	"github.com/cappyzawa/markdown-view/controllers"
+	"github.com/cappyzawa/markdown-view/webhook/markdownview"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -97,10 +99,11 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "MarkdownView")
 		os.Exit(1)
 	}
-	if err = (&viewv1.MarkdownView{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "MarkdownView")
-		os.Exit(1)
-	}
+
+	// Setup webhooks
+	hookServer := mgr.GetWebhookServer()
+	hookServer.Register("/mutate-view-cappyzawa-github-io-v1-markdownview", &webhook.Admission{Handler: &markdownview.Mutator{}})
+	hookServer.Register("/validate-view-cappyzawa-github-io-v1-markdownview", &webhook.Admission{Handler: &markdownview.Validator{}})
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
