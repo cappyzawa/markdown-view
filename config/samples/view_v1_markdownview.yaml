@@ -22,5 +22,6 @@ spec:
       # Page 1
 
       1ページ目のコンテンツです。
+      Updateした
   replicas: 1
   viewerImage: "peaceiris/mdbook:latest"

@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -37,12 +38,14 @@ import (
 	appsv1apply "k8s.io/client-go/applyconfigurations/apps/v1"
 	corev1apply "k8s.io/client-go/applyconfigurations/core/v1"
 	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
+	"k8s.io/client-go/tools/record"
 )
 
 // MarkdownViewReconciler reconciles a MarkdownView object
 type MarkdownViewReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=view.cappyzawa.github.io,resources=markdownviews,verbs=get;list;watch;create;update;patch;delete
@@ -64,6 +67,7 @@ func (r *MarkdownViewReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	var mdView viewv1.MarkdownView
 	err := r.Get(ctx, req.NamespacedName, &mdView)
 	if errors.IsNotFound(err) {
+		r.removeMetrics(mdView)
 		return ctrl.Result{}, nil
 	}
 	if err != nil {
@@ -309,6 +313,8 @@ func (r *MarkdownViewReconciler) reconcileService(ctx context.Context, mdView vi
 }
 
 func (r *MarkdownViewReconciler) updateStatus(ctx context.Context, mdView viewv1.MarkdownView) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
 	var dep appsv1.Deployment
 	err := r.Get(ctx, client.ObjectKey{Namespace: mdView.Namespace, Name: "viewer-" + mdView.Name}, &dep)
 	if err != nil {
@@ -326,6 +332,11 @@ func (r *MarkdownViewReconciler) updateStatus(ctx context.Context, mdView viewv1
 
 	if mdView.Status != status {
 		mdView.Status = status
+		r.setMetrics(mdView)
+
+		r.Recorder.Event(&mdView, corev1.EventTypeNormal, "Updated", fmt.Sprintf("MarkdownView(%s:%s) updated: %s", mdView.Namespace, mdView.Name, mdView.Status))
+
+		logger.Info("update status", "name", mdView.Name, "namespace", mdView.Namespace)
 		err = r.Status().Update(ctx, &mdView)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -346,6 +357,29 @@ func (r *MarkdownViewReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Complete(r)
+}
+
+func (r *MarkdownViewReconciler) setMetrics(mdView viewv1.MarkdownView) {
+	switch mdView.Status {
+	case viewv1.MarkdownViewNotReady:
+		NotReadyVec.WithLabelValues(mdView.Name, mdView.Namespace).Set(1)
+		AvailableVec.WithLabelValues(mdView.Name, mdView.Namespace).Set(0)
+		HealthyVec.WithLabelValues(mdView.Name, mdView.Namespace).Set(0)
+	case viewv1.MarkdownViewAvailable:
+		NotReadyVec.WithLabelValues(mdView.Name, mdView.Namespace).Set(0)
+		AvailableVec.WithLabelValues(mdView.Name, mdView.Namespace).Set(1)
+		HealthyVec.WithLabelValues(mdView.Name, mdView.Namespace).Set(0)
+	case viewv1.MarkdownViewHealthy:
+		NotReadyVec.WithLabelValues(mdView.Name, mdView.Namespace).Set(0)
+		AvailableVec.WithLabelValues(mdView.Name, mdView.Namespace).Set(0)
+		HealthyVec.WithLabelValues(mdView.Name, mdView.Namespace).Set(1)
+	}
+}
+
+func (r *MarkdownViewReconciler) removeMetrics(mdView viewv1.MarkdownView) {
+	NotReadyVec.DeleteLabelValues(mdView.Name, mdView.Namespace)
+	AvailableVec.DeleteLabelValues(mdView.Name, mdView.Namespace)
+	HealthyVec.DeleteLabelValues(mdView.Name, mdView.Namespace)
 }
 
 func controllerReference(mdView viewv1.MarkdownView, scheme *runtime.Scheme) (*metav1apply.OwnerReferenceApplyConfiguration, error) {
