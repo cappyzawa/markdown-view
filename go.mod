@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/onsi/ginkgo/v2 v2.12.0
-	github.com/onsi/gomega v1.27.10
+	github.com/onsi/gomega v1.28.0
 	github.com/prometheus/client_golang v1.15.1
 	k8s.io/api v0.26.3
 	k8s.io/apimachinery v0.27.1
